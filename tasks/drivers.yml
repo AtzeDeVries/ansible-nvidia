@@ -3,7 +3,7 @@
 
 # check if driver is installed.
 # http://us.download.nvidia.com/XFree86/Linux-x86_64/384.111/NVIDIA-Linux-x86_64-384.111.run
-# This should be set to platform indepenand
+# This is only for ubuntu. For centos packages should be gcc gcc-c++ make openssl-devel
 - name: install build-essential
   package:
     name: build-essential
