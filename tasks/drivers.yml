@@ -1,0 +1,58 @@
+---
+# tasks file for nvidia
+
+# check if driver is installed.
+# http://us.download.nvidia.com/XFree86/Linux-x86_64/384.111/NVIDIA-Linux-x86_64-384.111.run
+# This should be set to platform indepenand
+- name: install build-essential
+  package:
+    name: build-essential
+    state: present
+
+- name: check if nouveau driver is loaded
+  shell: "lsmod | grep nouveau | wc -l"
+  register: lsmod_nouveau
+
+- name: unload nouveau driver
+  command: rmmod nouveau
+  when: lsmod_nouveau.stdout != "0"
+
+- name: check if nvidia driver is available and is correct version {{ nvidia_driver_version }}
+  shell: modinfo nvidia -F version
+  register: modinfo_nvidia
+  failed_when:  modinfo_nvidia.rc != 0 and modinfo_nvidia.rc != 1
+
+- debug:
+    var: modinfo_nvidia
+
+- name: check if nvidia driver is loaded
+  shell: "lsmod | grep nvidia | wc -l"
+  register: lsmod_nvidia
+
+- name: modprobe nvidia driver if installed and correct version
+  shell: modprobe nvidia
+  when: modinfo_nvidia.stdout == "{{ nvidia_driver_version }}" and lsmod_nvidia.stdout == "0"
+
+- name: download driver {{ nvidia_driver_version}}
+  get_url:
+    url: http://us.download.nvidia.com/XFree86/Linux-x86_64/{{ nvidia_driver_version}}/NVIDIA-Linux-x86_64-{{ nvidia_driver_version}}.run
+    dest: /opt/nvidia_driver_{{nvidia_driver_version}}.run
+    mode: 0700
+    #  register: download_nvidia_driver
+  when: modinfo_nvidia.stdout != "{{ nvidia_driver_version }}"
+  #  become: true
+
+- name: check archive integrity of /opt/nvidia_driver_{{nvidia_driver_version}}.run
+  command: /opt/nvidia_driver_{{nvidia_driver_version}}.run --check
+  register: nvidia_archive_check
+  when: modinfo_nvidia.stdout != "{{ nvidia_driver_version }}"
+
+- name: install nvidia driver {{nvidia_driver_version}}
+  command: /opt/nvidia_driver_{{nvidia_driver_version}}.run --silent --no-drm
+  when: nvidia_archive_check.changed
+     and nvidia_archive_check.rc == 0
+  register: nvidia_driver_install
+
+- name: modprobe nvidia driver {{nvidia_driver_version}} after install
+  command: modprobe nvidia
+  when: nvidia_driver_install.changed
