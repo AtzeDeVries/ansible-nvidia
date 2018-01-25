@@ -10,3 +10,12 @@ Installs nvidia drivers on a linux CLI system. It installs drivers without insta
   roles:
     - { role: nvidia , nvidia_driver_version: "384.111" }
 ```
+
+### Compatiblity
+Tested: Ubuntu 16.04
+
+Should work with:
+* ubuntu
+* debian
+* redhat/centos
+* fedora
